@@ -6,11 +6,14 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger'; // استيراد Swagger decorators
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Paginate, Paginated, type PaginateQuery } from 'nestjs-paginate';
+import { User } from './entities/user.entity';
 
 @ApiTags('Users')
 @Controller('users')
@@ -26,10 +29,14 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all users' })
-  @ApiResponse({ status: 200, description: 'Return all users.' })
-  findAll() {
-    return this.usersService.findAll();
+  @ApiOperation({ summary: 'Get all users with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return all users paginated.',
+    type: Paginated<User>,
+  })
+  findAll(@Paginate() query: PaginateQuery): Promise<Paginated<User>> {
+    return this.usersService.findAll(query);
   }
 
   @Get(':id')
