@@ -15,6 +15,9 @@ import {
 import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm/dist/common/typeorm.decorators';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { RegisterDto } from '../auth/dto/register.dto';
+import { hash } from '../../common/utils/bcrypt.util';
 
 @Injectable()
 export class UsersService {
@@ -22,9 +25,11 @@ export class UsersService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
   ) {}
-  async create(createUserDto: CreateUserDto) {
+  async create(dto: CreateUserDto | RegisterDto) {
     try {
-      const user = await this.usersRepository.save(createUserDto);
+      dto.password = await hash(dto.password);
+      const { role, password, passwordConfirm, hashed_refresh_token, ...user } =
+        await this.usersRepository.save(dto);
       return { message: 'User created successfully', user };
     } catch (error) {
       const errorMessage =
@@ -57,6 +62,14 @@ export class UsersService {
     return user;
   }
 
+  async findByEmail(email: string) {
+    const user = await this.usersRepository.findOne({ where: { email } });
+    if (!user) {
+      throw new NotFoundException(`User with email ${email} not found`);
+    }
+    return user;
+  }
+
   async update(id: number, updateUserDto: UpdateUserDto) {
     const { passwordConfirm, ...updateData } = updateUserDto;
     const result = await this.usersRepository.update(id, updateData);
@@ -72,5 +85,19 @@ export class UsersService {
       throw new NotFoundException(`User with id ${id} not found`);
     }
     return 'User deleted successfully';
+  }
+
+  async updateRefreshToken(userId: number, refreshToken: string | null) {
+    if (!refreshToken) {
+      await this.usersRepository.update(userId, {
+        hashed_refresh_token: null,
+      });
+      return;
+    }
+    const hashed = await bcrypt.hash(refreshToken, 10);
+
+    await this.usersRepository.update(userId, {
+      hashed_refresh_token: hashed,
+    });
   }
 }

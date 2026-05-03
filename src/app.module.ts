@@ -5,6 +5,10 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm/dist/typeorm.module';
 import { UsersModule } from './modules/users/users.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AccessAuthGuard } from './modules/auth/guards/access-token.guard';
+import { CacheModule } from '@nestjs/cache-manager';
+import KeyvRedis, { Keyv } from '@keyv/redis';
 
 @Module({
   imports: [
@@ -24,9 +28,27 @@ import { UsersModule } from './modules/users/users.module';
         synchronize: configService.get<boolean>('DB_SYNC'),
       }),
     }),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      useFactory: async () => {
+        return {
+          stores: [
+            new Keyv({
+              store: new KeyvRedis('redis://localhost:6379'),
+            }),
+          ],
+        };
+      },
+    }),
     UsersModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: AccessAuthGuard,
+    },
+  ],
 })
 export class AppModule {}

@@ -1,6 +1,15 @@
-import { IsEmail, IsNotEmpty, Matches, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  Matches,
+  MinLength,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger'; // استيراد الـ Decorator
 import { Match } from '../../../common/decorators/match.decorator';
+import { Exclude } from 'class-transformer';
+import { User } from '../entities/user.entity';
+import { UserRole } from '../../../common/constants/user-role.constant';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'Ahmed', description: 'The first name of the user' })
@@ -39,4 +48,12 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'Please confirm your password' })
   @Match('password', { message: 'Passwords do not match' })
   passwordConfirm: string;
+
+  @ApiProperty({
+    example: UserRole.USER,
+    description: 'The role of the user',
+    enum: UserRole,
+  })
+  @IsEnum(UserRole)
+  role: UserRole;
 }

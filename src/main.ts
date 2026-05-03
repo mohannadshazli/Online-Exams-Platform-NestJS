@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common/pipes/validation.pipe';
 import { updateGlobalConfig } from 'nestjs-paginate';
 import { ClassSerializerInterceptor } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -42,6 +43,17 @@ async function bootstrap() {
   //For removing password from the response
   const reflector = app.get(Reflector);
   app.useGlobalInterceptors(new ClassSerializerInterceptor(reflector));
+
+  //For parsing cookies in incoming requests
+  app.use(cookieParser());
+
+  //For enabling CORS
+  app.enableCors({
+    origin: '*',
+    credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+  });
 
   //For starting the application
   await app.listen(process.env.PORT ?? 3000);
